@@ -9,39 +9,44 @@ This is the first Peer Assessment project for the Reproducible Research course.
 
 First, the appropriate libraries must be loaded to allow for the calcualations that will be completed.
 
-```{r}
+```{r, echo = FALSE}
 require("dplyr")
 require("ggplot2")
 require("scales")
 ```
 
-## Open activity file and store in table
+##Load and preprocess the data
+#### Open activity file and store in table
 
 ```{r}
 activ <- read.csv(".//activity.csv")
+glimpse(activ)
 ```
 
-## Determine total steps per day calculation
+##What is the mean total number of steps taken per day?
+#### Determine total steps per day calculation
 
 ```{r}
 aggSum <- activ %>% group_by(date) %>% summarize(totSteps = sum(steps, na.rm = FALSE))
+glimpse(aggSum)
 ```
 
 
-## Create histogram of total steps per day
+#### Create histogram of total steps per day
 ```{r, echo=FALSE}
-ggplot(data=aggSum, aes(totSteps)) + geom_histogram()
+ggplot(data=aggSum, aes(totSteps)) + geom_histogram() + ggtitle("Total Steps Per Day")
 ```
 
-## Calculate and report the mean and median number of steps per day
+#### Calculate and report the mean and median number of steps per day
 
 ```{r}
 meanSteps <- mean(aggSum$totSteps, na.rm = TRUE)
 medianSteps <- median(aggSum$totSteps, na.rm = TRUE)
 ```
+The average number of steps per day is `r format(meanSteps, digits=2, nsmall=2)`.  
+The median number of steps per day is `r medianSteps`.
 
-
-## Plot time series graph of the 5-minute intervals and the average number of steps taken
+#### Plot time series graph of the 5-minute intervals and the average number of steps taken
 
 ```{r, echo = FALSE}
 intAvg <- activ %>% group_by(interval) %>% summarize(meanSteps = mean(steps, na.rm = TRUE))
@@ -52,34 +57,32 @@ ggplot(intAvg, aes(interval, meanSteps)) + geom_line() +
     ggtitle("Time Series - Steps Taken")
 paste("The Max number of steps in an interval was", filter(intAvg, meanSteps==max(meanSteps)))
 ```
+##Imputing missing values
 
-## Calculate the total number of rows where there is an NA in the row
+#### Calculate the total number of rows where there is an NA in the row
 
 ```{r}
 enAyRows <- sum(is.na(activ))
-```
-
-## Fill in NA values with average of daily number of steps
-
-```{r}
-sapply(activ, ifelse(is.na(activ$steps), steps = mean(activ), steps = steps))
-
-
+paste("There are", enAyRows, "rows with NA.")
 ```
 
 
 
-3.	Create a new dataset that is equal to the original dataset but with the missing data filled in.
+#### Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
 ```{r}
 activImp <- inner_join(activ, intAvg, by="interval") %>% 
     mutate(steps=ifelse(is.na(steps),meanSteps,steps)) %>%
     select(date,interval,steps)
+glimpse(activImp)
 ```
 
 
-4.	Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+#### Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
 Are there differences in activity patterns between weekdays and weekends?
+
 ```{r, echo = FALSE}
 aggSumImp <- activImp %>% group_by(date) %>% summarize(totStepsImp = sum(steps, na.rm = FALSE))
 
@@ -89,10 +92,15 @@ meanStepsImp <- mean(aggSumImp$totStepsImp, na.rm = TRUE)
 medianStepsImp <- median(aggSumImp$totStepsImp, na.rm = TRUE)
 
 ```
+The average number of steps per day (imputed) is `r meanSteps`.  
+The median number of steps per day (imputed) is `r medianSteps`.  
+
+The average and median differ little from the non-imputed metrics since the average value was imputed.
+
+One might expect that there would be little difference - the analysis supports that expectation.
 
 
-
-1.	Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+#### Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
 
 ```{r}
 activImp <- activImp %>%
@@ -106,7 +114,8 @@ wk_df <- aggregate(steps ~ weekend.indicator+interval, data=activImp, FUN=mean)
 ```
 
 
-2.	Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
+
+#### Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).  
 
 ```{r, echo = FALSE}
 
