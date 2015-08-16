@@ -8,6 +8,10 @@ This is the first Peer Assessment project for the Reproducible Research course.
 First, the appropriate libraries must be loaded to allow for the calcualations that will be completed.
 
 
+```r
+require("dplyr")
+```
+
 ```
 ## Loading required package: dplyr
 ## 
@@ -20,8 +24,21 @@ First, the appropriate libraries must be loaded to allow for the calcualations t
 ## The following objects are masked from 'package:base':
 ## 
 ##     intersect, setdiff, setequal, union
-## 
+```
+
+```r
+require("ggplot2")
+```
+
+```
 ## Loading required package: ggplot2
+```
+
+```r
+require("scales")
+```
+
+```
 ## Loading required package: scales
 ```
 
@@ -82,7 +99,21 @@ The median number of steps per day is 10765.
 ## What is the average daily activity pattern?
 #### Plot time series graph of the 5-minute intervals and the average number of steps taken
 
+
+```r
+intAvg <- activ %>% group_by(interval) %>% summarize(meanSteps = mean(steps, na.rm = TRUE))
+
+ggplot(intAvg, aes(interval, meanSteps)) + geom_line() +
+    xlab("5-Second Time Interval") + 
+    ylab("Average Steps Taken") + 
+    ggtitle("Time Series - Steps Taken")
+```
+
 ![](PA1_template_files/figure-html/unnamed-chunk-6-1.png) 
+
+```r
+paste("The Max number of steps in an interval was", filter(intAvg, meanSteps==max(meanSteps)))
+```
 
 ```
 ## [1] "The Max number of steps in an interval was 835"             
@@ -130,11 +161,22 @@ glimpse(activImp)
 Are there differences in activity patterns between weekdays and weekends?
 
 
+```r
+aggSumImp <- activImp %>% group_by(date) %>% summarize(totStepsImp = sum(steps, na.rm = FALSE))
+
+ggplot(data=aggSumImp, aes(totStepsImp)) + geom_histogram()
+```
+
 ```
 ## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust this.
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-9-1.png) 
+
+```r
+meanStepsImp <- mean(aggSumImp$totStepsImp, na.rm = TRUE)
+medianStepsImp <- median(aggSumImp$totStepsImp, na.rm = TRUE)
+```
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
@@ -160,5 +202,17 @@ wk_df <- aggregate(steps ~ weekend.indicator+interval, data=activImp, FUN=mean)
 
 
 #### Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).  
+
+
+```r
+library(lattice)
+xyplot(steps ~ interval | factor(weekend.indicator),
+       layout = c(1, 2),
+       xlab="Interval",
+       ylab="Number of steps",
+       type="l",
+       lty=1,
+       data=wk_df)
+```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-11-1.png) 
