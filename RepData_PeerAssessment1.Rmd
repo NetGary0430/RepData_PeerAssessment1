@@ -1,0 +1,135 @@
+---
+title: "RepData_PeerAssessment1"
+author: "Gary"
+date: "August 12, 2015"
+output: html_document
+---
+
+This is the first Peer Assessment project for the Reproducible Research course.
+
+First, the appropriate libraries must be loaded to allow for the calcualations that will be completed.
+
+```{r}
+require("dplyr")
+require("ggplot2")
+require("scales")
+```
+
+## Open activity file and store in table
+
+```{r}
+activ <- read.csv(".//activity.csv")
+```
+
+## Determine total steps per day calculation
+
+```{r}
+aggSum <- activ %>% group_by(date) %>% summarize(totSteps = sum(steps, na.rm = FALSE))
+```
+
+
+## Create histogram of total steps per day
+```{r, echo=FALSE}
+ggplot(data=aggSum, aes(totSteps)) + geom_histogram()
+```
+
+## Calculate and report the mean and median number of steps per day
+
+```{r}
+meanSteps <- mean(aggSum$totSteps, na.rm = TRUE)
+medianSteps <- median(aggSum$totSteps, na.rm = TRUE)
+```
+
+
+## Plot time series graph of the 5-minute intervals and the average number of steps taken
+
+```{r, echo = FALSE}
+intAvg <- activ %>% group_by(interval) %>% summarize(meanSteps = mean(steps, na.rm = TRUE))
+
+ggplot(intAvg, aes(interval, meanSteps)) + geom_line() +
+    xlab("5-Second Time Interval") + 
+    ylab("Average Steps Taken") + 
+    ggtitle("Time Series - Steps Taken")
+paste("The Max number of steps in an interval was", filter(intAvg, meanSteps==max(meanSteps)))
+```
+
+## Calculate the total number of rows where there is an NA in the row
+
+```{r}
+enAyRows <- sum(is.na(activ))
+```
+
+## Fill in NA values with average of daily number of steps
+
+```{r}
+sapply(activ, ifelse(is.na(activ$steps), steps = mean(activ), steps = steps))
+
+
+```
+
+
+
+3.	Create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+```{r}
+activImp <- inner_join(activ, intAvg, by="interval") %>% 
+    mutate(steps=ifelse(is.na(steps),meanSteps,steps)) %>%
+    select(date,interval,steps)
+```
+
+
+4.	Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+Are there differences in activity patterns between weekdays and weekends?
+```{r, echo = FALSE}
+aggSumImp <- activImp %>% group_by(date) %>% summarize(totStepsImp = sum(steps, na.rm = FALSE))
+
+ggplot(data=aggSumImp, aes(totStepsImp)) + geom_histogram()
+
+meanStepsImp <- mean(aggSumImp$totStepsImp, na.rm = TRUE)
+medianStepsImp <- median(aggSumImp$totStepsImp, na.rm = TRUE)
+
+```
+
+
+
+1.	Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+
+```{r}
+activImp <- activImp %>%
+    mutate(weekend.indicator =
+               as.factor(ifelse(weekdays(as.Date(date)) %in% c("Saturday","Sunday"),
+                                "weekend","weekday")))
+
+intAvgImpWk <- activImp %>% group_by(interval) %>% summarize(meanStepsWeekend = mean(steps, na.rm = TRUE))
+
+wk_df <- aggregate(steps ~ weekend.indicator+interval, data=activImp, FUN=mean)
+```
+
+
+2.	Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
+
+```{r, echo = FALSE}
+
+library(lattice)
+xyplot(steps ~ interval | factor(weekend.indicator),
+       layout = c(1, 2),
+       xlab="Interval",
+       ylab="Number of steps",
+       type="l",
+       lty=1,
+       data=wk_df)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
